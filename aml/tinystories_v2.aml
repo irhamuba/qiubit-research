@@ -1,0 +1,226 @@
+Program TinyStories {
+  // stories260K (llama2.c, MIT) on the Octra VM in Q16 fixed point.
+  // Weights: per-row int8 (base64) + row scales and RMSNorm gammas (Q16 as packed int24).
+  // Only ops admitted by the node's typed Program profile are used (no matmul, no parse_ints).
+  // Tokenization happens client side; generate() takes and returns token ids.
+
+  const DIM: int = 64
+  const HID: int = 172
+  const KVD: int = 32
+  const NL: int = 5
+  const NH: int = 8
+  const NKV: int = 4
+  const HD: int = 8
+  const VOCAB: int = 512
+  const ONE: int = 65536
+  const ROPE_BASE: int = 655360000
+
+  // memory layout
+  const X: int = 10000
+  const XB: int = 10100
+  const QV: int = 10200
+  const KV: int = 10300
+  const VV: int = 10400
+  const ATT: int = 10500
+  const TMP: int = 10600
+  const H1: int = 11000
+  const H3: int = 11200
+  const LOGITS: int = 12000
+  const PROMPT: int = 20000
+  const SCRATCH: int = 21000
+  const ONE_CELL: int = 21900
+  const ESVEC: int = 22000
+  const LAYERS: int = 100000
+  const LSTRIDE: int = 50000
+  const TOK: int = 400000
+  const TOK_S: int = 440000
+  const G_FINAL: int = 441000
+  const CACHE: int = 500000
+  const CSTRIDE: int = 40000
+  const VOFF: int = 20000
+
+  // offsets inside a layer block
+  const O_WQ: int = 0
+  const O_WK: int = 4096
+  const O_WV: int = 6144
+  const O_WO: int = 8192
+  const O_W1: int = 12288
+  const O_W2: int = 23296
+  const O_W3: int = 34304
+  const O_SQ: int = 45312
+  const O_SK: int = 45376
+  const O_SV: int = 45408
+  const O_SO: int = 45440
+  const O_S1: int = 45504
+  const O_S2: int = 45676
+  const O_S3: int = 45740
+  const O_GA: int = 45912
+  const O_GF: int = 45976
+
+  state {
+    owner: address
+    wt: map[string]string
+  }
+
+  constructor() {
+    self.owner = origin
+  }
+
+  fn set_tensor(name: string, data: string): bool {
+    require(caller == self.owner, "not owner")
+    self.wt[name] = data
+    return true
+  }
+
+  // v = a*65536 + b*256 + c, planes a|b|c of n int8 each (see ref/export.py pack_int24)
+  private fn load_int24(data: string, addr: int, n: int): bool {
+    load_int8_q16(addr, data, 0, n, ONE)
+    load_int8_q16(SCRATCH, data, n, n, 256)
+    residual_add_q16(addr, SCRATCH, n)
+    load_int8_q16(SCRATCH, data, 2 * n, n, 1)
+    residual_add_q16(addr, SCRATCH, n)
+    return true
+  }
+
+  private fn load_mat(name: string, layer: int, addr: int, rows: int, inner: int, scale_addr: int): bool {
+    let key = concat(name, to_string(layer))
+    load_int8_q16(addr, self.wt[key], 0, rows * inner, ONE)
+    load_int24(self.wt[concat("s_", key)], scale_addr, rows)
+    return true
+  }
+
+  private fn load_weights(): bool {
+    load_int8_q16(TOK, self.wt["tok"], 0, VOCAB * DIM, ONE)
+    load_int24(self.wt["s_tok"], TOK_S, VOCAB)
+    load_int24(self.wt["g_rms_final"], G_FINAL, DIM)
+    for l in 0..NL {
+      let b = LAYERS + l * LSTRIDE
+      load_mat("wq", l, b + O_WQ, DIM, DIM, b + O_SQ)
+      load_mat("wk", l, b + O_WK, KVD, DIM, b + O_SK)
+      load_mat("wv", l, b + O_WV, KVD, DIM, b + O_SV)
+      load_mat("wo", l, b + O_WO, DIM, DIM, b + O_SO)
+      load_mat("w1", l, b + O_W1, HID, DIM, b + O_S1)
+      load_mat("w2", l, b + O_W2, DIM, HID, b + O_S2)
+      load_mat("w3", l, b + O_W3, HID, DIM, b + O_S3)
+      load_int24(self.wt[concat("g_rms_att", to_string(l))], b + O_GA, DIM)
+      load_int24(self.wt[concat("g_rms_ffn", to_string(l))], b + O_GF, DIM)
+    }
+    return true
+  }
+
+  // dst = (W x) * row_scale ; W is rows x inner, int8 values held as Q16 integers,
+  // so each vecdot_q16 (sum of truncated products) is exact
+  // rows must be a multiple of 4 (64, 32, 172, 512 all are); unrolled to cut loop overhead
+  private fn lin(dst: int, w: int, s: int, x: int, rows: int, inner: int): bool {
+    let p = w
+    let d = dst
+    for r in 0..rows / 4 {
+      mset(d, vecdot_q16(p, x, inner))
+      p += inner
+      mset(d + 1, vecdot_q16(p, x, inner))
+      p += inner
+      mset(d + 2, vecdot_q16(p, x, inner))
+      p += inner
+      mset(d + 3, vecdot_q16(p, x, inner))
+      p += inner
+      d += 4
+    }
+    elemwise_mul_q16(dst, s, rows)
+    return true
+  }
+
+  // typed read of one memory cell: mget() is "unknown" to the node's type-flow check,
+  // vecdot_q16 over one cell against Q16 1.0 returns the same value as int
+  private fn peek(addr: int): int {
+    return vecdot_q16(addr, ONE_CELL, 1)
+  }
+
+  private fn copy(dst: int, src: int, n: int): bool {
+    append_vec_q16(dst, 0, src, n)
+    return true
+  }
+
+  // logits = 0 skips the 512-row classifier: prompt positions already know the next token
+  private fn forward(token: int, pos: int, logits: int): int {
+    // embedding row: int8 (held as q * ONE) times its row scale, exact
+    let es = peek(TOK_S + token)
+    for i in 0..DIM {
+      mset(ESVEC + i, es)
+    }
+    copy(X, TOK + token * DIM, DIM)
+    elemwise_mul_q16(X, ESVEC, DIM)
+    for l in 0..NL {
+      let b = LAYERS + l * LSTRIDE
+      let kc = CACHE + l * CSTRIDE
+      copy(XB, X, DIM)
+      rmsnorm_q16(XB, DIM, b + O_GA)
+      lin(QV, b + O_WQ, b + O_SQ, XB, DIM, DIM)
+      lin(KV, b + O_WK, b + O_SK, XB, KVD, DIM)
+      lin(VV, b + O_WV, b + O_SV, XB, KVD, DIM)
+      for h in 0..NH {
+        rope_apply_q16(QV + h * HD, HD, pos, ROPE_BASE)
+      }
+      for h in 0..NKV {
+        rope_apply_q16(KV + h * HD, HD, pos, ROPE_BASE)
+      }
+      append_vec_q16(kc, pos, KV, KVD)
+      append_vec_q16(kc + VOFF, pos, VV, KVD)
+      attention_kv_q16(QV, kc, kc + VOFF, ATT, pos + 1, NH, NKV, HD)
+      lin(TMP, b + O_WO, b + O_SO, ATT, DIM, DIM)
+      residual_add_q16(X, TMP, DIM)
+
+      copy(XB, X, DIM)
+      rmsnorm_q16(XB, DIM, b + O_GF)
+      lin(H1, b + O_W1, b + O_S1, XB, HID, DIM)
+      lin(H3, b + O_W3, b + O_S3, XB, HID, DIM)
+      silu_q16(H1, HID)
+      elemwise_mul_q16(H1, H3, HID)
+      lin(TMP, b + O_W2, b + O_S2, H1, DIM, HID)
+      residual_add_q16(X, TMP, DIM)
+    }
+    if logits == 0 {
+      return 0
+    }
+    rmsnorm_q16(X, DIM, G_FINAL)
+    lin(LOGITS, TOK, TOK_S, X, VOCAB, DIM)
+    return argmax_q16(LOGITS, VOCAB)
+  }
+
+  // prompt: n token ids starting with BOS (1), packed as base64 hi|lo int8 planes
+  // (ref/export.py pack_tokens). Returns CSV of generated ids.
+  view fn generate(prompt: string, n: int, steps: int): string {
+    require(steps > 0, "steps must be positive")
+    require(n > 0, "empty prompt")
+    mset(ONE_CELL, ONE)
+    load_weights()
+    load_int8_q16(PROMPT, prompt, 0, n, 256)
+    load_int8_q16(SCRATCH, prompt, n, n, 1)
+    residual_add_q16(PROMPT, SCRATCH, n)
+    require(n + steps <= 512, "context limit 512")
+    // for, not while: the node's type-flow check rejects bottom-tested loops
+    let cur = peek(PROMPT)
+    let out = ""
+    let done = 0
+    for pos in 0..steps {
+      if done == 0 {
+        let next = 0
+        if pos + 1 < n {
+          forward(cur, pos, 0)
+          next = peek(PROMPT + pos + 1)
+        } else {
+          next = forward(cur, pos, 1)
+        }
+        if next == 1 {
+          done = 1
+        } else {
+          if pos > 0 {
+            out = concat(out, ",")
+          }
+          out = concat(out, to_string(next))
+          cur = next
+        }
+      }
+    }
+    return out
+  }
+}

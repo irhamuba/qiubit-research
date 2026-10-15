@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://devnet.octrascan.io; img-src 'self' data:; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <title>qiubit · on-chain stories</title>
+  <meta name="description" content="Chat with the stories260K language model running inside the Octra devnet VM.">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="icon-128.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon-128.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-row">
+      <span class="brand"><img src="icon-128.png" alt="" width="26" height="26">qiubit</span>
+    <button type="button" class="model-pill" id="info-toggle" aria-expanded="false" aria-controls="info">
+      <span class="dot" aria-hidden="true"></span>
+      stories260K <span class="muted">· Octra devnet</span>
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    </div>
+    <button type="button" class="ghost" id="new-chat" aria-label="New chat">
+      <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M14.5 3.5 16.5 5.5 9 13H7v-2l7.5-7.5ZM4 6h4M4 16h12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </header>
+
+  <div class="info" id="info" hidden>
+    <p><strong>The model runs on the blockchain.</strong> The stories260K weights (260K parameters) live in an Octra program, and the node computes every token in Q16 fixed point. Outputs match the Python reference bit for bit.</p>
+    <dl>
+      <dt>Program</dt><dd><a id="program-link" target="_blank" rel="noopener"></a></dd>
+      <dt>code_hash</dt><dd><code id="hash-full"></code></dd>
+      <dt>Limit</dt><dd>10 positions per message, shared by the prompt and the reply. No memory between messages.</dd>
+      <dt>License</dt><dd><a href="https://huggingface.co/karpathy/tinyllamas" target="_blank" rel="noopener">stories260K</a> &amp; <a href="https://github.com/karpathy/llama2.c" target="_blank" rel="noopener">llama2.c</a> (MIT, Andrej Karpathy), trained on <a href="https://huggingface.co/datasets/roneneldan/TinyStories" target="_blank" rel="noopener">TinyStories</a> (CDLA-Sharing-1.0)</dd>
+    </dl>
+  </div>
+
+  <main class="thread" id="thread" aria-live="polite">
+    <section class="empty" id="empty">
+      <h1>How should the story begin?</h1>
+      <p class="sub">Write the first words. An Octra node writes what comes next.</p>
+      <div class="suggestions" id="suggestions">
+        <button type="button" class="chip">Once upon a time, Tom</button>
+        <button type="button" class="chip">Lily saw a big</button>
+        <button type="button" class="chip">The little dog</button>
+        <button type="button" class="chip">One day, a cat</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="dock">
+    <form class="composer" id="composer">
+      <label for="prompt" class="sr-only">Story opening</label>
+      <textarea id="prompt" rows="1" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Start a story…"></textarea>
+      <div class="composer-bar">
+        <div class="budget" title="Budget per call: 10 positions">
+          <span class="cells" id="cells" aria-hidden="true"></span>
+          <span class="budget-note" id="budget-note"></span>
+        </div>
+        <div class="stepper" role="group" aria-label="New tokens">
+          <button type="button" id="minus" aria-label="Fewer tokens">&minus;</button>
+          <output id="new-tokens">3</output>
+          <button type="button" id="plus" aria-label="More tokens">+</button>
+        </div>
+        <button type="submit" class="send" id="run" aria-label="Send">
+          <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15V5M5.5 9.5 10 5l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </form>
+    <p class="disclaimer">qiubit runs stories260K on an Octra devnet node. Prompts and replies are public.</p>
+  </footer>
+</body>
+</html>

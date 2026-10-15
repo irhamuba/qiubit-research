@@ -1,0 +1,21 @@
+{
+ "tx": {
+  "status": "rejected",
+  "tx_hash": "73e2573c90de012102eabd05e463d13e0886c953d3a39df73e6ba5dc44ca327c",
+  "epoch": 1695639,
+  "error": {
+   "type": "program_exec_failed",
+   "reason": "execution reverted"
+  },
+  "from": "oct41fQ5hpaarA4ZuNpy3DJxvSRq9RwFs7TMKSTHZRkce5p",
+  "to": "oct4LetvjEP7fzTyvaUBSu7aDKBtM1peufyCBmSDvos5HTR",
+  "amount": "0",
+  "nonce": 171,
+  "rejected_at": 1792040363.729859,
+  "source": "rejected_txs"
+ },
+ "receipt": {
+  "error": "{\"error\":\"not found: receipt not found\"}",
+  "status": 404
+ }
+}

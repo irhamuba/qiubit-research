@@ -1,0 +1,110 @@
+{
+ "time_unix": 1792036972,
+ "epoch": {
+  "jsonrpc": "2.0",
+  "result": {
+   "epoch_id": 1695394,
+   "roots": 0
+  },
+  "id": 1
+ },
+ "contract": {
+  "jsonrpc": "2.0",
+  "result": {
+   "address": "octHx7PLvqUka2CMVHVYXReAwfvwzv15uuoYh9qqAKVB1rj",
+   "version": "2.0 AML-preview",
+   "code_hash": "7653be39bbfab88d48e7ebb7ac0687e400aac2c11294d80cb44aa0b3d33215c6",
+   "balance": "0",
+   "owner": "oct41fQ5hpaarA4ZuNpy3DJxvSRq9RwFs7TMKSTHZRkce5p"
+  },
+  "id": 1
+ },
+ "deploy_tx": {
+  "jsonrpc": "2.0",
+  "result": {
+   "status": "confirmed",
+   "tx_hash": "ca0d5205cf38a537ec32580a9946c3cb9ce10fb50862e3f096f626f4ffc25f12",
+   "epoch": 1695023,
+   "from": "oct41fQ5hpaarA4ZuNpy3DJxvSRq9RwFs7TMKSTHZRkce5p",
+   "to": "octHx7PLvqUka2CMVHVYXReAwfvwzv15uuoYh9qqAKVB1rj",
+   "amount": "0",
+   "amount_raw": "0",
+   "nonce": 3,
+   "ou": "219000",
+   "timestamp": 1792032314.4991307,
+   "op_type": "program_deploy",
+   "message": null
+  },
+  "id": 1
+ },
+ "upload_tx_first": {
+  "jsonrpc": "2.0",
+  "result": {
+   "status": "confirmed",
+   "tx_hash": "bbfdfabf2e317cd867ce55152b0453862b4f6c2ace6ecafccc0fee17c7dcf167",
+   "epoch": 1695208,
+   "from": "oct41fQ5hpaarA4ZuNpy3DJxvSRq9RwFs7TMKSTHZRkce5p",
+   "to": "octHx7PLvqUka2CMVHVYXReAwfvwzv15uuoYh9qqAKVB1rj",
+   "amount": "0",
+   "amount_raw": "0",
+   "nonce": 4,
+   "ou": "1000",
+   "timestamp": 1792034585.9068289,
+   "op_type": "program_exec",
+   "message": "[\"g_rms_final\",\"AgECAQEEAgICAgICAgECAwIDAQIBAgIDAgECAgECAQMCAQECAgMBAgICAQIBAQECAgICAQICAgICAgICAgEBAnVewBx8ba2F79eIiK5jLZ7likmNUgSlsrxoV+AplEov8Tp4HrFjRWzsyyKtYThmg87Q6itboxjXVtLZ67n5dLVUCR2b6tOgOnOOb05eAyV2HbOv+Yu9tm+p0dKRqEZPlh1uUZxMfl87mG+f6hSbxkrZWFnufoWubYRF+MDD1+Ax\"]"
+  },
+  "id": 1
+ },
+ "runs": [
+  {
+   "prompt": "",
+   "prompt_ids": [
+    1
+   ],
+   "steps": 9,
+   "response": {
+    "jsonrpc": "2.0",
+    "result": {
+     "result": "403,407,261,378,432,383,286,261,376"
+    },
+    "id": 1
+   }
+  },
+  {
+   "prompt": "Once upon a time, Tom",
+   "prompt_ids": [
+    1,
+    403,
+    407,
+    261,
+    378,
+    432,
+    274,
+    287
+   ],
+   "steps": 9,
+   "response": {
+    "jsonrpc": "2.0",
+    "result": {
+     "result": "403,407,261,378,432,274,287,269,410"
+    },
+    "id": 1
+   }
+  },
+  {
+   "prompt": "",
+   "prompt_ids": [
+    1
+   ],
+   "steps": 10,
+   "response": {
+    "jsonrpc": "2.0",
+    "error": {
+     "code": -32000,
+     "message": "execution reverted"
+    },
+    "id": 1
+   }
+  }
+ ]
+}
