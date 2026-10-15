@@ -1,4 +1,4 @@
-# Dongeng On-Chain (web UI)
+# qiubit chat UI (web)
 
 A static page that calls the `generate` view on the TinyStories program on Octra devnet
 (`oct4LetvjEP7fzTyvaUBSu7aDKBtM1peufyCBmSDvos5HTR`) straight from the browser. It has no backend and needs no
