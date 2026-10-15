@@ -11,7 +11,7 @@ bit for bit. The `web/` folder is a chat-style page that lets anyone use the mod
 > devnet. If devnet is reset, the program address stops working until it is redeployed
 > (`ref/deploy.py` + `ref/upload.py`). Nothing here is audited; do not use it with funds you care about.
 
-- Live demo: _coming soon (Vercel)_
+- Live demo: https://chat.qiubitwallet.com/
 - Paper: [`docs/paper.pdf`](docs/paper.pdf)
 - Live program (v2): `oct4LetvjEP7fzTyvaUBSu7aDKBtM1peufyCBmSDvos5HTR` on
   [devnet](https://devnet.octrascan.io/program.html?addr=oct4LetvjEP7fzTyvaUBSu7aDKBtM1peufyCBmSDvos5HTR)
