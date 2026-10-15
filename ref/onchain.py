@@ -14,7 +14,8 @@ from int_ref import IntModel, generate
 from model import Tokenizer
 
 STATE = Path(__file__).resolve().parent.parent / "build/upload.json"
-CALLER = "oct41fQ5hpaarA4ZuNpy3DJxvSRq9RwFs7TMKSTHZRkce5p"
+# view calls need a caller address but no signature; any well-formed address works
+CALLER = "oct1111111111111111111111111111111111111111111"
 
 
 def view(addr, method, params):

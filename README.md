@@ -7,6 +7,11 @@ Llama 2 model, to an AML program. The program runs transformer inference inside 
 Q16 fixed point. The model is live on Octra devnet, and its output matches a float32 reference
 bit for bit. The `web/` folder is a chat-style page that lets anyone use the model with no wallet.
 
+> **Status: research prototype on Octra devnet.** The program and the website depend on
+> devnet. If devnet is reset, the program address stops working until it is redeployed
+> (`ref/deploy.py` + `ref/upload.py`). Nothing here is audited; do not use it with funds you care about.
+
+- Live demo: _coming soon (Vercel)_
 - Paper: [`docs/paper.pdf`](docs/paper.pdf)
 - Live program (v2): `oct4LetvjEP7fzTyvaUBSu7aDKBtM1peufyCBmSDvos5HTR` on
   [devnet](https://devnet.octrascan.io/program.html?addr=oct4LetvjEP7fzTyvaUBSu7aDKBtM1peufyCBmSDvos5HTR)
@@ -68,7 +73,7 @@ Vercel, set the project root to `web/` with framework preset "Other" and no buil
 
 ## Licenses
 
-The weights, tokenizer, and `llama2.c` reference are MIT (Andrej Karpathy); see
+The code in this repository is MIT ([`LICENSE`](LICENSE)). The weights, tokenizer, and `llama2.c` reference are MIT (Andrej Karpathy); see
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). The model was trained on TinyStories
 (CDLA-Sharing-1.0). Octra's `amlc` (BSD-3-Clause) and `webcli` (GPL-2.0-or-later) are used as
 external tools and are not included.
